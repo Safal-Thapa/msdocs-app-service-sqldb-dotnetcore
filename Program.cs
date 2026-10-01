@@ -1,5 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using DotNetCoreSqlDb.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add database context
@@ -21,6 +22,14 @@ builder.Services.AddControllersWithViews();
 builder.Logging.AddAzureWebAppDiagnostics();
 
 var app = builder.Build();
+
+// Automatically apply any pending database migrations on startup to create the Todo table
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var context = services.GetRequiredService<MyDatabaseContext>();
+    context.Database.Migrate();
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
