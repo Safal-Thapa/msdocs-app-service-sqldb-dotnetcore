@@ -1,18 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using DotNetCoreSqlDb.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add database context
-if (builder.Environment.IsDevelopment())
-{
-    builder.Services.AddDbContext<MyDatabaseContext>(options =>
-        options.UseSqlServer(builder.Configuration.GetConnectionString("MyDbConnection")));
-}
-// else
-// {
-//     builder.Services.AddDbContext<MyDatabaseContext>(options =>
-//         options.UseSqlServer(builder.Configuration.GetConnectionString("AZURE_SQL_CONNECTIONSTRING")));
-// }
+// Add database context for both local and Azure environments
+builder.Services.AddDbContext<MyDatabaseContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("MyDbConnection")));
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
@@ -22,11 +15,17 @@ builder.Logging.AddAzureWebAppDiagnostics();
 
 var app = builder.Build();
 
+// Automatically create database tables on startup
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<MyDatabaseContext>();
+    dbContext.Database.Migrate();
+}
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
